@@ -11,8 +11,14 @@ class AppKernel extends SyliusKernel
     public function registerBundles()
     {
         $bundles = array(
+           
+
+            // CMF bundles.
+            
+            new Sensio\Bundle\GeneratorBundle\SensioGeneratorBundle(),
+            new \Ibillmaker\Hub\CoreBundle\IbillmakerHubCoreBundle(),
         );
 
-        return array_merge($bundles, parent::registerBundles());
+        return array_merge(parent::registerBundles(),$bundles);
     }
 }

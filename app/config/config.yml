@@ -1,7 +1,10 @@
 imports:
     - { resource: parameters.yml }
     - { resource: security.yml }
-    - { resource: @SyliusCoreBundle/Resources/config/app/main.yml }
+    - { resource: main.yml }
+    - { resource: cmf.yml }
+    - { resource: sylius.yml }
+    - { resource: payum.yml }
 
 framework:
     translator:      { fallback: %sylius.locale% }

@@ -113,7 +113,8 @@ sylius_resource:
             classes:
                 model: Ibillmaker\Hub\CoreBundle\Entity\User
                 controller: Ibillmaker\Hub\CoreBundle\Controller\UserController
-                repository: Sylius\Bundle\CoreBundle\Repository\UserRepository
+                repository: Ibillmaker\Hub\CoreBundle\Repository\UserRepository
+               
                
         sylius.group:
             driver: doctrine/orm

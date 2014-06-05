@@ -6,6 +6,7 @@ use Sylius\Bundle\CoreBundle\Controller\UserController as BaseUserController;
 
 class UserController extends BaseUserController
 {
+
     /**
      * {@inheritdoc}
      */
