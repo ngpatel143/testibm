@@ -15,7 +15,6 @@ class UserController extends BaseUserController
         if (null === $adminUser= $this->get('security.context')->getToken()->getUser()) {
             throw new NotFoundHttpException('Invalid Request.');
         }
-
         $user = parent::createNew();
         $user->setAdmin($adminUser);
 

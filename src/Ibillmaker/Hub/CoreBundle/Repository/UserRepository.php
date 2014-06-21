@@ -1,19 +1,25 @@
 <?php
+
 namespace Ibillmaker\Hub\CoreBundle\Repository;
 
 use Sylius\Bundle\CoreBundle\Repository\UserRepository as BaseUserRepository;
 use Symfony\Component\Security\Core\SecurityContextInterface;
+
 class UserRepository extends BaseUserRepository 
 {
-    
-    
-    protected $user;
 
-    public function setUserViaSecurityContext(SecurityContextInterface $securityContext)
+    protected $user;
+    protected $adminUser;
+
+    public function setUserViaSecurityContext(SecurityContextInterface $securityContext) 
     {
         $this->user = $securityContext->getToken()->getUser();
+        $this->adminUser = $this->user->getAdmin();
+        if ($this->adminUser == NULL) {        
+                $this->adminUser = $this->user;
+        }
     }
-    
+
     /**
      * Create filter paginator.
      *
@@ -22,50 +28,40 @@ class UserRepository extends BaseUserRepository
      *
      * @return PagerfantaInterface
      */
-    public function createFilterPaginator($criteria = array(), $sorting = array(), $deleted = false)
-    {   
+    public function createFilterPaginator($criteria = array(), $sorting = array(), $deleted = false) 
+    {
         $queryBuilder = parent::getCollectionQueryBuilder();
 
         if ($deleted) {
             $this->_em->getFilters()->disable('softdeleteable');
         }
-        $adminUser = $this->user->getAdmin();
         
-         
-        
-        
-   
+
         if (isset($criteria['query'])) {
             $queryBuilder
-                ->where('o.username LIKE :query')
-                ->orWhere('o.email LIKE :query')
-                ->innerJoin('o.admin', 'admin')
-                ->andWhere('admin = :admin')
-                ->setParameter('admin', $this->user)    
-                ->setParameter('query', '%'.$criteria['query'].'%')
-                
+                    ->where('o.username LIKE :query')
+                    ->orWhere('o.email LIKE :query')
+                    ->innerJoin('o.admin', 'admin')
+                    ->andWhere('admin = :admin')
+                    ->setParameter('admin', $this->user)
+                    ->setParameter('query', '%' . $criteria['query'] . '%')
+
             ;
+        } else {
+            $queryBuilder
+                        ->innerJoin('o.admin', 'admin')
+                        ->andWhere('admin = :admin')
+                        ->setParameter('admin', $this->adminUser)
+                ;
         }
-        else
-        {
-            if($adminUser=$this->user->getAdmin() !== NULL && !isset($criteria)){
-          $queryBuilder
-            ->innerJoin('o.admin', 'admin')
-            ->andWhere('admin = :admin')
-            ->setParameter('admin', $adminUser)
-        ;
-        }else{
-           $queryBuilder
-            ->innerJoin('o.admin', 'admin')
-            ->andWhere('admin = :admin')
-            ->setParameter('admin', $this->user);
-        }
-        }
-        
+
         if (isset($criteria['enabled'])) {
             $queryBuilder
-                ->andWhere('o.enabled = :enabled')
-                ->setParameter('enabled', $criteria['enabled'])
+                    ->andWhere('o.enabled = :enabled')
+                    ->innerJoin('o.admin', 'admin')
+                    ->andWhere('admin = :admin')
+                    ->setParameter('admin', $this->adminUser)
+                    ->setParameter('enabled', $criteria['enabled'])
             ;
         }
 
@@ -76,7 +72,7 @@ class UserRepository extends BaseUserRepository
             $sorting['updatedAt'] = 'desc';
         }
 
-       // $this->applySorting($queryBuilder, $sorting);
+        // $this->applySorting($queryBuilder, $sorting);
 
         return $this->getPaginator($queryBuilder);
     }
@@ -86,53 +82,61 @@ class UserRepository extends BaseUserRepository
      *
      * @param integer $id
      */
-    public function findForDetailsPage($id)
-    {
+    public function findForDetailsPage($id) {
         $queryBuilder = $this->getQueryBuilder();
 
         $this->_em->getFilters()->disable('softdeleteable');
 
         $queryBuilder
-            ->andWhere($queryBuilder->expr()->eq('o.id', ':id'))
-            ->setParameter('id', $id)
+                ->andWhere($queryBuilder->expr()->eq('o.id', ':id'))
+                ->innerJoin('o.admin', 'admin')
+                ->andWhere('admin = :admin')
+                ->setParameter('admin', $this->adminUser)
+                ->setParameter('id', $id)
         ;
 
         $result = $queryBuilder
-            ->getQuery()
-            ->getOneOrNullResult()
+                ->getQuery()
+                ->getOneOrNullResult()
         ;
 
         return $result;
     }
 
-    public function countBetweenDates(\DateTime $from, \DateTime $to, $status = null)
-    {
+    public function countBetweenDates(\DateTime $from, \DateTime $to, $status = null) {
         $queryBuilder = $this->getCollectionQueryBuilderBetweenDates($from, $to);
         if (null !== $status) {
             $queryBuilder
-                ->andWhere('o.status = :status')
-                ->setParameter('status', $status)
+                    ->innerJoin('o.admin', 'admin')
+                    ->andWhere('admin = :admin')
+                    ->setParameter('admin', $this->adminUser)
+                    ->andWhere('o.status = :status')
+                    ->setParameter('status', $status)
             ;
         }
 
         return $queryBuilder
-            ->select('count(o.id)')
-            ->getQuery()
-            ->getSingleScalarResult()
+                        ->select('count(o.id)')
+                        ->innerJoin('o.admin', 'admin')
+                        ->andWhere('admin = :admin')
+                        ->setParameter('admin', $this->adminUser)
+                        ->getQuery()
+                        ->getSingleScalarResult()
         ;
     }
 
-    protected function getCollectionQueryBuilderBetweenDates(\DateTime $from, \DateTime $to)
-    {
+    protected function getCollectionQueryBuilderBetweenDates(\DateTime $from, \DateTime $to) {
         $queryBuilder = $this->getCollectionQueryBuilder();
 
         return $queryBuilder
-            ->andWhere($queryBuilder->expr()->gte('o.createdAt', ':from'))
-            ->andWhere($queryBuilder->expr()->lte('o.createdAt', ':to'))
-            ->setParameter('from', $from)
-            ->setParameter('to', $to)
+                        ->andWhere($queryBuilder->expr()->gte('o.createdAt', ':from'))
+                        ->andWhere($queryBuilder->expr()->lte('o.createdAt', ':to'))
+                        ->innerJoin('o.admin', 'admin')
+                        ->andWhere('admin = :admin')
+                        ->setParameter('admin', $this->adminUser)
+                        ->setParameter('from', $from)
+                        ->setParameter('to', $to)
         ;
     }
+
 }
-
-
